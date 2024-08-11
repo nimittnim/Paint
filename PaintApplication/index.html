@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paint</title>
+    <style>
+        body {
+            background: rgba(251, 252, 239);
+            margin: 0;
+            border: 2px solid black;
+        }
+        .title{
+            align-items: center;
+            height: 40px;
+            width: 1460px;
+            background-color: rgb(245, 245, 245);
+            text-align: center; /* Center the text horizontally */
+            line-height: 40px; /* Center the text vertically within the 40px height */
+            font-size: 24px; /* Adjust the font size as needed */
+            color: black; /* Text color */
+            border: 2px solid black;
+            padding: 1px;
+            gap:1px;
+        }
+        .container {
+            display: flex;
+        }
+
+        .palette {
+            width: 60px;
+            height: 800px;
+            background-color: #f0f0f0;
+            padding: 1px;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 2px solid black;
+            cursor: pointer;
+            display: grid;
+            align-items: center;
+            margin: 3px;
+            border-radius: 10px;
+        }
+
+        .cell img {
+            width: 90%;
+            height: 90%;
+            align-items: center;
+        }
+
+        .canvas {
+            border: 2px solid black;
+            background-color: rgb(245, 245, 245);
+        }
+
+        /* Add a CSS class for the selected tool */
+        .selected {
+            background-color: lightblue;
+        }
+        .highlight{
+            background-color: lightblue;
+            transition: background-color 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">Paint</div>
+    <div class="container">
+        <div class="palette">
+            <div class="cell" onclick="select(0)"><div><img src="paintbrush.png" width="40" height="40"></div></div>
+            <div class="cell" onclick="select(1)"><div><img src="paintbucket.png" width="40" height="40"></div></div>
+            <div class="cell" onclick="select(2)"><div><img src="eraser.png" width="40" height="40"></div></div>
+            <div class="cell" onclick="select(3)"><div><img src="rectangle.png" width="40" height="40"></div></div>
+            <div class="cell" onclick="select(4)"><div><img src="circle.png" width="40" height="40"></div></div>
+            <div class="cell" onclick="select(5)"><div><img src="triangle.png" width="40" height="40"></div></div>
+            <div class="cell" onclick="select(6)"><div><img src="undo.png" width="40" height="40"></div></div>
+            <div class="cell" onclick="select(7)"><div><img src="redo.png" width="40" height="40"></div></div>
+            <div class="cell" onclick="select(8)"><div><img src="eraser.png" width="40" height="40"></div></div>
+            <div class="cell" id="clearButton" onclick="clearCanvas()"><div><img src="clear.png" width="40" height="40"></div></div>
+        </div>
+        <canvas id="canvas" class="canvas" width="1400" height="800"></canvas>
+    </div>
+
+    <script>
+        let selected;
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let isDrawing = false; // Flag to check if drawing is in progress
+        let isErasing = false;
+        let erasersize = 8;
+        let drawsize = 3;
+        let trianglePoints = []; // Array to store triangle points
+
+        function select(s) {
+            // Remove the 'selected' class from all cells
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => cell.classList.remove('selected'));
+
+            // Add the 'selected' class to the clicked cell
+            selected = s;
+            cells[s].classList.add('selected');
+        }
+
+       
+
+        canvas.addEventListener('mousedown', function(event) {
+            isDrawing = true;
+            isErasing = true;
+            if (selected === 5) { // Triangle tool selected
+                // Add the first point of the triangle
+                trianglePoints.push({ x: event.clientX - canvas.getBoundingClientRect().left, y: event.clientY - canvas.getBoundingClientRect().top });
+            }
+        });
+
+        canvas.addEventListener('mousemove', function(event) {
+            if (isDrawing) {
+                const x = event.clientX - canvas.getBoundingClientRect().left;
+                const y = event.clientY - canvas.getBoundingClientRect().top;
+                draw(x, y);
+                erase(x, y);
+                if (selected === 5) { // Triangle tool selected
+                    // Update the second point of the triangle while dragging
+                    trianglePoints[1] = { x, y };
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', function(event) {
+            isDrawing = false;
+            isErasing = false;
+            if (selected === 5) { // Triangle tool selected
+                // Add the third point of the triangle
+                trianglePoints.push({ x: event.clientX - canvas.getBoundingClientRect().left, y: event.clientY - canvas.getBoundingClientRect().top });
+                drawTriangle(trianglePoints);
+                trianglePoints = []; // Clear the points array
+            }
+        });
+
+        canvas.addEventListener('mouseout', function(event) {
+            isDrawing = false;
+            isErasing = false;
+        });
+
+        function draw(x, y) {
+            if (selected === 0 && isDrawing) { // Paintbrush and drawing in progress
+                ctx.fillStyle = 'blue'; // Set fill color
+                ctx.fillRect(x, y, drawsize, drawsize); // Draw a small square
+            }
+        }
+
+        function erase(x, y) {
+            if (selected == 2 && isErasing) {
+                ctx.fillStyle = "rgb(245, 245, 245)";
+                ctx.fillRect(x, y, erasersize, erasersize);
+            }
+        }
+
+        function drawTriangle(points) {
+            if (points.length === 3) {
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                ctx.lineTo(points[1].x, points[1].y);
+                ctx.lineTo(points[2].x, points[2].y);
+                ctx.closePath();
+                ctx.fillStyle = 'blue'; // Set fill color
+                ctx.fill();
+            }
+        }
+
+        function clearCanvas() {
+            const clearButton = document.getElementById("clearButton");
+            clearButton.classList.add("highlight");
+            setTimeout(function(){
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                clearButton.classList.remove("highlight");
+            },200);
+           
+        }
+    </script>
+</body>
+</html>
